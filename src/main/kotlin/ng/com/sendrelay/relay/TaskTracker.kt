@@ -39,6 +39,8 @@ data class TaskTrackerState @JvmOverloads constructor(
     val events: List<TaskEvent> = emptyList(),
     val finished: Boolean = status?.isFinished ?: false,
     val error: String? = null,
+    /** When Relay stops looking for a rider (ISO 8601), for tasks that keep looking or are booked. Count down to this while SEARCHING. */
+    val searchExpiresAt: String? = null,
 ) {
     /** The state after an event. Events for other tasks change nothing. */
     @JvmOverloads
@@ -58,6 +60,7 @@ data class TaskTrackerState @JvmOverloads constructor(
                     finished = done,
                     currentStageIndex = stage,
                     eta = if (keepEta) eta else null,
+                    searchExpiresAt = e.searchExpiresAt ?: searchExpiresAt,
                     events = (listOf(e) + events).take(maxEvents),
                 )
             }

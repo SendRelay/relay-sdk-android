@@ -4,7 +4,7 @@ Official [Relay](https://sendrelay.com.ng) SDK for Android: show a delivery's st
 
 ```kotlin
 // build.gradle.kts
-implementation("ng.com.sendrelay:relay-android:1.7.0")
+implementation("ng.com.sendrelay:relay-android:1.8.0")
 ```
 
 Android 7+ (API 24). Built on OkHttp.

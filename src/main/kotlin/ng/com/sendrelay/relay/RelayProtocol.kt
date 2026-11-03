@@ -112,6 +112,7 @@ object RelayProtocol {
                 type = eventType,
                 taskId = taskId,
                 status = TaskStatus.from(obj.string("status")),
+                rawStatus = obj.string("status"),
                 riderId = obj.string("riderId"),
                 developerId = obj.string("developerId"),
                 currentStageIndex = obj.int("currentStageIndex"),
@@ -121,8 +122,13 @@ object RelayProtocol {
                 cancelledBy = obj.string("cancelledBy"),
                 deliveryFee = (obj["deliveryFee"] as? JsonPrimitive)?.longOrNull,
                 completionCodeVerified = obj.bool("completionCodeVerified"),
-                at = listOf("timestamp", "completedAt", "cancelledAt", "failedAt", "assignedAt", "startedAt", "offeredAt")
-                    .firstNotNullOfOrNull { obj.string(it) },
+                at = listOf(
+                    "timestamp", "completedAt", "cancelledAt", "failedAt", "assignedAt", "startedAt", "searchingAt", "detectedAt", "offeredAt",
+                ).firstNotNullOfOrNull { obj.string(it) },
+                strategy = obj.string("strategy"),
+                pickupAt = obj.string("pickupAt"),
+                searchExpiresAt = obj.string("searchExpiresAt"),
+                ridersNearby = obj.int("ridersNearby"),
             ),
         )
     }

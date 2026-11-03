@@ -1,10 +1,14 @@
 package ng.com.sendrelay.relay
 
 /** The published SDK version. Kept in sync with gradle.properties by scripts/check-sdk-versions.mjs. */
-const val RELAY_SDK_VERSION = "1.7.0"
+const val RELAY_SDK_VERSION = "1.8.0"
 
 enum class TaskStatus(val value: String) {
+    /** Booked for a pickup time; Relay has not started looking yet. */
+    SCHEDULED("SCHEDULED"),
     PENDING("PENDING"),
+    /** Still looking for a rider after the first offers. */
+    SEARCHING("SEARCHING"),
     OFFERED("OFFERED"),
     ASSIGNED("ASSIGNED"),
     IN_PROGRESS("IN_PROGRESS"),
@@ -24,6 +28,12 @@ enum class TaskStatus(val value: String) {
 
 /** A task lifecycle event from the server. */
 enum class TaskEventType(val value: String, val status: TaskStatus?) {
+    /** A booked task's search opened: Relay is now looking for a rider. */
+    DISPATCH_STARTED("TASK_DISPATCH_STARTED", TaskStatus.PENDING),
+    /** The task keeps looking for a rider after its first offers, until `searchExpiresAt`. */
+    SEARCHING("TASK_SEARCHING", TaskStatus.SEARCHING),
+    /** A waiting manual task has eligible riders near its pickup (a count only). */
+    RIDERS_NEARBY("TASK_RIDERS_NEARBY", null),
     OFFERED("TASK_OFFERED", TaskStatus.OFFERED),
     ASSIGNED("TASK_ASSIGNED", TaskStatus.ASSIGNED),
     IN_PROGRESS("TASK_IN_PROGRESS", TaskStatus.IN_PROGRESS),
@@ -42,6 +52,7 @@ enum class TaskEventType(val value: String, val status: TaskStatus?) {
 data class TaskEvent(
     val type: TaskEventType,
     val taskId: String,
+    /** Null when the server sent no status, or one this SDK version does not know (see [rawStatus]). */
     val status: TaskStatus? = null,
     val riderId: String? = null,
     val developerId: String? = null,
@@ -58,6 +69,16 @@ data class TaskEvent(
     val completionCodeVerified: Boolean? = null,
     /** When it happened (ISO 8601), from whichever timestamp the event carries. */
     val at: String? = null,
+    /** The status exactly as the server sent it, including ones newer than this SDK. Last, so existing positional calls keep compiling. */
+    val rawStatus: String? = null,
+    /** TASK_SEARCHING: WAIT_FOR_RIDER or SCHEDULED (or a newer strategy). */
+    val strategy: String? = null,
+    /** TASK_DISPATCH_STARTED: when the rider should reach the pickup (ISO 8601). */
+    val pickupAt: String? = null,
+    /** TASK_DISPATCH_STARTED / TASK_SEARCHING: when Relay stops looking (ISO 8601). */
+    val searchExpiresAt: String? = null,
+    /** TASK_RIDERS_NEARBY: how many eligible riders were found. */
+    val ridersNearby: Int? = null,
 )
 
 data class RiderLocation(

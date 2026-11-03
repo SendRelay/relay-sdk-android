@@ -37,6 +37,7 @@ class ConformanceTest {
             mapOf(
                 "taskId" to taskId, "status" to status?.value, "riderId" to riderId,
                 "stageIndex" to stageIndex, "reason" to reason, "cancelledBy" to cancelledBy,
+                "strategy" to strategy, "pickupAt" to pickupAt, "searchExpiresAt" to searchExpiresAt, "ridersNearby" to ridersNearby,
             )
         }
         is RelayEvent.RiderLocationChanged -> with(event.update) {
@@ -149,6 +150,16 @@ class ConformanceTest {
 
 class TaskTrackerStateTest {
     private fun event(json: String) = RelayProtocol.parse(json)!!
+
+    @Test
+    fun keepsAStatusThisVersionDoesNotKnow() {
+        val unknown = (event("""{"type":"TASK_ASSIGNED","taskId":"t1","status":"SOME_FUTURE_STATUS"}""") as RelayEvent.Task).event
+        assertEquals(null, unknown.status)
+        assertEquals("SOME_FUTURE_STATUS", unknown.rawStatus)
+        val known = (event("""{"type":"TASK_ASSIGNED","taskId":"t1","status":"ASSIGNED"}""") as RelayEvent.Task).event
+        assertEquals(TaskStatus.ASSIGNED, known.status)
+        assertEquals("ASSIGNED", known.rawStatus)
+    }
 
     @Test
     fun followsADelivery() {
