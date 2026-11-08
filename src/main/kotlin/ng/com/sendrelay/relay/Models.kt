@@ -1,7 +1,7 @@
 package ng.com.sendrelay.relay
 
 /** The published SDK version. Kept in sync with gradle.properties by scripts/check-sdk-versions.mjs. */
-const val RELAY_SDK_VERSION = "1.8.0"
+const val RELAY_SDK_VERSION = "1.9.0"
 
 enum class TaskStatus(val value: String) {
     /** Booked for a pickup time; Relay has not started looking yet. */
@@ -38,6 +38,12 @@ enum class TaskEventType(val value: String, val status: TaskStatus?) {
     ASSIGNED("TASK_ASSIGNED", TaskStatus.ASSIGNED),
     IN_PROGRESS("TASK_IN_PROGRESS", TaskStatus.IN_PROGRESS),
     STAGE_COMPLETED("STAGE_COMPLETED", null),
+    /** The rider reached a stop (`stageIndex`, `stageType`), once per stop. */
+    STAGE_ARRIVED("STAGE_ARRIVED", null),
+    /** The business edited notes, instructions or a stop's contact; read the task again. */
+    DETAILS_UPDATED("TASK_DETAILS_UPDATED", null),
+    /** Opt-in (`onRiderCancel: FIND_ANOTHER`): the rider cancelled before pickup; Relay is finding another. */
+    RIDER_UNASSIGNED("TASK_RIDER_UNASSIGNED", TaskStatus.PENDING),
     COMPLETED("TASK_COMPLETED", TaskStatus.COMPLETED),
     FAILED("TASK_FAILED", TaskStatus.FAILED),
     CANCELLED("TASK_CANCELLED", TaskStatus.CANCELLED);
@@ -79,6 +85,10 @@ data class TaskEvent(
     val searchExpiresAt: String? = null,
     /** TASK_RIDERS_NEARBY: how many eligible riders were found. */
     val ridersNearby: Int? = null,
+    /** STAGE_ARRIVED: PICKUP or DROPOFF. */
+    val stageType: String? = null,
+    /** TASK_RIDER_UNASSIGNED: further rider cancels the task can survive before it ends CANCELLED. */
+    val researchesLeft: Int? = null,
 )
 
 data class RiderLocation(

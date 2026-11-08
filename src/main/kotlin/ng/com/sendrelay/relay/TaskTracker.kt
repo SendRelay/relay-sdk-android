@@ -55,11 +55,15 @@ data class TaskTrackerState @JvmOverloads constructor(
                 val stage = e.currentStageIndex ?: e.nextStageIndex ?: currentStageIndex
                 // The ETA belongs to a stop; drop it once the task moves on or ends.
                 val keepEta = !done && !(eta != null && stage != null && eta.stageIndex != stage)
+                // The rider who cancelled is gone; their last position and ETA no longer apply.
+                val unassigned = e.type == TaskEventType.RIDER_UNASSIGNED
                 copy(
                     status = nextStatus,
                     finished = done,
                     currentStageIndex = stage,
-                    eta = if (keepEta) eta else null,
+                    eta = if (keepEta && !unassigned) eta else null,
+                    rider = if (unassigned) null else rider,
+                    riderId = if (unassigned) null else riderId,
                     searchExpiresAt = e.searchExpiresAt ?: searchExpiresAt,
                     events = (listOf(e) + events).take(maxEvents),
                 )

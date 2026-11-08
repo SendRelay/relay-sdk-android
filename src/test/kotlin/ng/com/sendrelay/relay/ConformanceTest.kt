@@ -38,6 +38,7 @@ class ConformanceTest {
                 "taskId" to taskId, "status" to status?.value, "riderId" to riderId,
                 "stageIndex" to stageIndex, "reason" to reason, "cancelledBy" to cancelledBy,
                 "strategy" to strategy, "pickupAt" to pickupAt, "searchExpiresAt" to searchExpiresAt, "ridersNearby" to ridersNearby,
+                "stageType" to stageType, "researchesLeft" to researchesLeft,
             )
         }
         is RelayEvent.RiderLocationChanged -> with(event.update) {

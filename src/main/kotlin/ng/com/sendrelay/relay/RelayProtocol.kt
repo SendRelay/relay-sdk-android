@@ -124,11 +124,14 @@ object RelayProtocol {
                 completionCodeVerified = obj.bool("completionCodeVerified"),
                 at = listOf(
                     "timestamp", "completedAt", "cancelledAt", "failedAt", "assignedAt", "startedAt", "searchingAt", "detectedAt", "offeredAt",
+                    "arrivedAt",
                 ).firstNotNullOfOrNull { obj.string(it) },
                 strategy = obj.string("strategy"),
                 pickupAt = obj.string("pickupAt"),
                 searchExpiresAt = obj.string("searchExpiresAt"),
                 ridersNearby = obj.int("ridersNearby"),
+                stageType = obj.string("stageType"),
+                researchesLeft = obj.int("researchesLeft"),
             ),
         )
     }
