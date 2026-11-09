@@ -132,6 +132,7 @@ object RelayProtocol {
                 ridersNearby = obj.int("ridersNearby"),
                 stageType = obj.string("stageType"),
                 researchesLeft = obj.int("researchesLeft"),
+                revision = (obj["revision"] as? JsonPrimitive)?.longOrNull,
             ),
         )
     }
@@ -159,4 +160,30 @@ object RelayProtocol {
     private fun JsonObject.double(key: String): Double? = primitive(key)?.doubleOrNull
     private fun JsonObject.int(key: String): Int? = primitive(key)?.intOrNull
     private fun JsonObject.bool(key: String): Boolean? = primitive(key)?.booleanOrNull
+}
+
+/**
+ * Delivery order for task events. Each carries the task's `revision`, which only grows; an event at
+ * or below the last one delivered for its task is a duplicate or arrived late and is dropped. Events
+ * without a revision (location updates, older servers) always pass. Thread-safe.
+ */
+class RevisionGate {
+    private val last = HashMap<String, Long>()
+
+    /** True when the event should be delivered; records its revision. */
+    @Synchronized
+    fun admit(event: RelayEvent): Boolean {
+        val task = (event as? RelayEvent.Task)?.event ?: return true
+        val revision = task.revision ?: return true
+        val seen = last[task.taskId]
+        if (seen != null && revision <= seen) return false
+        last[task.taskId] = revision
+        return true
+    }
+
+    /** Forget a task (after stopping listening to it). */
+    @Synchronized
+    fun forget(taskId: String) {
+        last.remove(taskId)
+    }
 }

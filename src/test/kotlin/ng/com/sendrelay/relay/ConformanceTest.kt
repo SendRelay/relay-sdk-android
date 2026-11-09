@@ -38,7 +38,7 @@ class ConformanceTest {
                 "taskId" to taskId, "status" to status?.value, "riderId" to riderId,
                 "stageIndex" to stageIndex, "reason" to reason, "cancelledBy" to cancelledBy,
                 "strategy" to strategy, "pickupAt" to pickupAt, "searchExpiresAt" to searchExpiresAt, "ridersNearby" to ridersNearby,
-                "stageType" to stageType, "researchesLeft" to researchesLeft,
+                "stageType" to stageType, "researchesLeft" to researchesLeft, "revision" to revision,
             )
         }
         is RelayEvent.RiderLocationChanged -> with(event.update) {
@@ -84,6 +84,27 @@ class ConformanceTest {
                 for ((key, want) in (expect["fields"] as? JsonObject).orEmpty()) {
                     val got = lookup(json, key)
                     assert(same(got, plain(want))) { "$key: got $got, want $want" }
+                }
+            }
+        }
+    }
+
+    @TestFactory
+    fun ordering(): List<DynamicTest> {
+        assumeTrue(available(), "conformance folder not found")
+        return read("realtime/ordering.json")["cases"]!!.jsonArray.map { c ->
+            val case = c.jsonObject
+            DynamicTest.dynamicTest(case["name"]!!.jsonPrimitive.content) {
+                val gate = RevisionGate()
+                val delivered = case["frames"]!!.jsonArray.mapNotNull { RelayProtocol.parse(it.toString())?.takeIf(gate::admit) }
+                val expect = case["expect"]!!.jsonArray.map { it.jsonObject }
+                assertEquals(expect.map { it["event"]!!.jsonPrimitive.content }, delivered.map { it.name })
+                for ((event, want) in delivered.zip(expect)) {
+                    val json = apiJson(event)
+                    for ((key, value) in (want["fields"] as? JsonObject).orEmpty()) {
+                        val got = lookup(json, key)
+                        assert(same(got, plain(value))) { "$key: got $got, want $value" }
+                    }
                 }
             }
         }

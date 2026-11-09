@@ -101,6 +101,7 @@ class RelayRealtimeClient @JvmOverloads constructor(
     private var open = false
     private var generation = 0
     private val listening = LinkedHashSet<String>()
+    private val order = RevisionGate()
     private var intentionalClose = false
     private var reconnectAttempt = 0
     private var lastPongAt = 0L
@@ -130,6 +131,7 @@ class RelayRealtimeClient @JvmOverloads constructor(
     fun stopListening(taskId: String) {
         scope.launch(serial) {
             synchronized(listening) { listening.remove(taskId) }
+            order.forget(taskId)
             if (open) send(RelayProtocol.unsubscribe(taskId))
         }
     }
@@ -207,7 +209,7 @@ class RelayRealtimeClient @JvmOverloads constructor(
                     lastPongAt = System.currentTimeMillis()
                     return
                 }
-                RelayProtocol.parse(text)?.let(::emit)
+                RelayProtocol.parse(text)?.takeIf(order::admit)?.let(::emit)
             }
 
             override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {

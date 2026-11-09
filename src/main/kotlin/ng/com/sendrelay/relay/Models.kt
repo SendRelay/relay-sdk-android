@@ -1,7 +1,7 @@
 package ng.com.sendrelay.relay
 
 /** The published SDK version. Kept in sync with gradle.properties by scripts/check-sdk-versions.mjs. */
-const val RELAY_SDK_VERSION = "1.9.0"
+const val RELAY_SDK_VERSION = "1.10.0"
 
 enum class TaskStatus(val value: String) {
     /** Booked for a pickup time; Relay has not started looking yet. */
@@ -89,6 +89,12 @@ data class TaskEvent(
     val stageType: String? = null,
     /** TASK_RIDER_UNASSIGNED: further rider cancels the task can survive before it ends CANCELLED. */
     val researchesLeft: Int? = null,
+    /**
+     * The task's revision after this event, as on webhooks and task reads; null when the frame has
+     * none (older servers). The client drops a frame at or below the last revision it delivered for
+     * the task, so events arrive in order and once.
+     */
+    val revision: Long? = null,
 )
 
 data class RiderLocation(
