@@ -42,8 +42,8 @@ mavenPublishing {
     if (providers.gradleProperty("signingInMemoryKey").isPresent) signAllPublications()
     coordinates("ng.com.sendrelay", "relay-android", version.toString())
     pom {
-        name.set("Relay Android SDK")
-        description.set("Official Relay SDK for Android, Kotlin and Java: track a delivery live")
+        name.set("SendRelay Android SDK")
+        description.set("Official SendRelay SDK for Android, Kotlin and Java: track a delivery live")
         url.set("https://docs.sendrelay.com.ng/sdks/android-sdk")
         licenses { license { name.set("MIT"); url.set("https://opensource.org/licenses/MIT") } }
         developers { developer { id.set("sendrelay"); name.set("SendRelay") } }

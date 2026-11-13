@@ -1,6 +1,6 @@
-# Relay SDK for Android (Kotlin and Java)
+# SendRelay SDK for Android (Kotlin and Java)
 
-Official [Relay](https://sendrelay.com.ng) SDK for Android: show a delivery's status, the rider on a map and a live arrival time. One library for Kotlin and Java, and it also runs on any JVM 11+.
+Official [SendRelay](https://sendrelay.com.ng) SDK for Android: show a delivery's status, the rider on a map and a live arrival time. One library for Kotlin and Java, and it also runs on any JVM 11+.
 
 ```kotlin
 // build.gradle.kts

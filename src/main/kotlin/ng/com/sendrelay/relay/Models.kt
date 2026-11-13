@@ -4,7 +4,7 @@ package ng.com.sendrelay.relay
 const val RELAY_SDK_VERSION = "1.10.0"
 
 enum class TaskStatus(val value: String) {
-    /** Booked for a pickup time; Relay has not started looking yet. */
+    /** Booked for a pickup time; SendRelay has not started looking yet. */
     SCHEDULED("SCHEDULED"),
     PENDING("PENDING"),
     /** Still looking for a rider after the first offers. */
@@ -28,7 +28,7 @@ enum class TaskStatus(val value: String) {
 
 /** A task lifecycle event from the server. */
 enum class TaskEventType(val value: String, val status: TaskStatus?) {
-    /** A booked task's search opened: Relay is now looking for a rider. */
+    /** A booked task's search opened: SendRelay is now looking for a rider. */
     DISPATCH_STARTED("TASK_DISPATCH_STARTED", TaskStatus.PENDING),
     /** The task keeps looking for a rider after its first offers, until `searchExpiresAt`. */
     SEARCHING("TASK_SEARCHING", TaskStatus.SEARCHING),
@@ -42,7 +42,7 @@ enum class TaskEventType(val value: String, val status: TaskStatus?) {
     STAGE_ARRIVED("STAGE_ARRIVED", null),
     /** The business edited notes, instructions or a stop's contact; read the task again. */
     DETAILS_UPDATED("TASK_DETAILS_UPDATED", null),
-    /** Opt-in (`onRiderCancel: FIND_ANOTHER`): the rider cancelled before pickup; Relay is finding another. */
+    /** Opt-in (`onRiderCancel: FIND_ANOTHER`): the rider cancelled before pickup; SendRelay is finding another. */
     RIDER_UNASSIGNED("TASK_RIDER_UNASSIGNED", TaskStatus.PENDING),
     COMPLETED("TASK_COMPLETED", TaskStatus.COMPLETED),
     FAILED("TASK_FAILED", TaskStatus.FAILED),
@@ -81,7 +81,7 @@ data class TaskEvent(
     val strategy: String? = null,
     /** TASK_DISPATCH_STARTED: when the rider should reach the pickup (ISO 8601). */
     val pickupAt: String? = null,
-    /** TASK_DISPATCH_STARTED / TASK_SEARCHING: when Relay stops looking (ISO 8601). */
+    /** TASK_DISPATCH_STARTED / TASK_SEARCHING: when SendRelay stops looking (ISO 8601). */
     val searchExpiresAt: String? = null,
     /** TASK_RIDERS_NEARBY: how many eligible riders were found. */
     val ridersNearby: Int? = null,

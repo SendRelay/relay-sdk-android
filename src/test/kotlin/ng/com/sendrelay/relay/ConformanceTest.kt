@@ -1,7 +1,7 @@
 package ng.com.sendrelay.relay
 
 // Runs the shared realtime conformance fixtures (packages/sdks/conformance) against this SDK.
-// Every Relay UI SDK runs the same fixtures, which is how they stay at parity.
+// Every SendRelay UI SDK runs the same fixtures, which is how they stay at parity.
 
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray

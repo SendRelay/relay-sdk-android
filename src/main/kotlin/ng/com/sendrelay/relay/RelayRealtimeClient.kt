@@ -67,7 +67,7 @@ fun interface RelayListener {
 }
 
 /**
- * Tracks tasks live over Relay's realtime socket. Works on Android and any JVM.
+ * Tracks tasks live over SendRelay's realtime socket. Works on Android and any JVM.
  *
  * Kotlin:
  * ```kotlin
