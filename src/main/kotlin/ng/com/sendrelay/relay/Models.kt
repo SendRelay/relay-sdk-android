@@ -1,7 +1,7 @@
 package ng.com.sendrelay.relay
 
 /** The published SDK version. Kept in sync with gradle.properties by scripts/check-sdk-versions.mjs. */
-const val RELAY_SDK_VERSION = "1.10.0"
+const val RELAY_SDK_VERSION = "1.11.0"
 
 enum class TaskStatus(val value: String) {
     /** Booked for a pickup time; SendRelay has not started looking yet. */
