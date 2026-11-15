@@ -1,7 +1,7 @@
 package ng.com.sendrelay.relay
 
 /** The published SDK version. Kept in sync with gradle.properties by scripts/check-sdk-versions.mjs. */
-const val RELAY_SDK_VERSION = "1.11.0"
+const val RELAY_SDK_VERSION = "1.12.0"
 
 enum class TaskStatus(val value: String) {
     /** Booked for a pickup time; SendRelay has not started looking yet. */
@@ -44,6 +44,10 @@ enum class TaskEventType(val value: String, val status: TaskStatus?) {
     DETAILS_UPDATED("TASK_DETAILS_UPDATED", null),
     /** Opt-in (`onRiderCancel: FIND_ANOTHER`): the rider cancelled before pickup; SendRelay is finding another. */
     RIDER_UNASSIGNED("TASK_RIDER_UNASSIGNED", TaskStatus.PENDING),
+    /** Pooled delivery: the rider started the shared route; `finalTotal` is the price. Comes after TASK_ASSIGNED. */
+    POOLING_GROUPED("TASK_POOLING_GROUPED", null),
+    /** Pooled delivery: it goes alone at `maxTotal` through ordinary dispatch; dispatch events follow. */
+    POOLING_SOLO("TASK_POOLING_SOLO", null),
     COMPLETED("TASK_COMPLETED", TaskStatus.COMPLETED),
     FAILED("TASK_FAILED", TaskStatus.FAILED),
     CANCELLED("TASK_CANCELLED", TaskStatus.CANCELLED);
@@ -95,6 +99,18 @@ data class TaskEvent(
      * the task, so events arrive in order and once.
      */
     val revision: Long? = null,
+    /** TASK_POOLING_*: the wave (for example MIDDAY) and its date (YYYY-MM-DD, Lagos). */
+    val wave: String? = null,
+    val waveDate: String? = null,
+    /** TASK_POOLING_GROUPED: how many other deliveries share the route (never who they are). */
+    val sharedWith: Int? = null,
+    /** TASK_POOLING_*: the most it can cost, in kobo. */
+    val maxTotal: Long? = null,
+    /** TASK_POOLING_GROUPED: what it costs, in kobo. */
+    val finalTotal: Long? = null,
+    /** TASK_POOLING_GROUPED: the planned pickup and delivery times (ISO 8601). */
+    val plannedPickupAt: String? = null,
+    val plannedDeliveryAt: String? = null,
 )
 
 data class RiderLocation(
@@ -128,6 +144,11 @@ data class RiderLocationUpdate(
     val timestamp: String?,
     /** True when the server replayed the last known position on subscribe. */
     val replayed: Boolean = false,
+    /**
+     * Pooled delivery: stops the rider makes before this delivery's next one; 0 when it is next (the
+     * update then has an [eta]). Null on every other task.
+     */
+    val stopsBefore: Int? = null,
 )
 
 /** Everything the realtime client tells you about. */

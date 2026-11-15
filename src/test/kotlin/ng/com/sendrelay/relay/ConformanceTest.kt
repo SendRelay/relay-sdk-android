@@ -39,6 +39,8 @@ class ConformanceTest {
                 "stageIndex" to stageIndex, "reason" to reason, "cancelledBy" to cancelledBy,
                 "strategy" to strategy, "pickupAt" to pickupAt, "searchExpiresAt" to searchExpiresAt, "ridersNearby" to ridersNearby,
                 "stageType" to stageType, "researchesLeft" to researchesLeft, "revision" to revision,
+                "sharedWith" to sharedWith, "maxTotal" to maxTotal, "finalTotal" to finalTotal,
+                "window" to if (wave != null || waveDate != null) mapOf("wave" to wave, "date" to waveDate) else null,
             )
         }
         is RelayEvent.RiderLocationChanged -> with(event.update) {
@@ -46,6 +48,7 @@ class ConformanceTest {
                 "taskId" to taskId, "riderId" to riderId, "timestamp" to timestamp,
                 "location" to mapOf("latitude" to location.latitude, "longitude" to location.longitude),
                 "eta" to eta?.let { mapOf("stageIndex" to it.stageIndex, "seconds" to it.seconds, "meters" to it.meters) },
+                "stopsBefore" to stopsBefore,
             )
         }
         else -> emptyMap()

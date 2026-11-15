@@ -103,6 +103,7 @@ object RelayProtocol {
                     eta = eta,
                     timestamp = obj.string("timestamp"),
                     replayed = obj.bool("replayed") ?: false,
+                    stopsBefore = obj.int("stopsBefore"),
                 ),
             )
         }
@@ -124,7 +125,7 @@ object RelayProtocol {
                 completionCodeVerified = obj.bool("completionCodeVerified"),
                 at = listOf(
                     "timestamp", "completedAt", "cancelledAt", "failedAt", "assignedAt", "startedAt", "searchingAt", "detectedAt", "offeredAt",
-                    "arrivedAt",
+                    "arrivedAt", "groupedAt", "soloAt",
                 ).firstNotNullOfOrNull { obj.string(it) },
                 strategy = obj.string("strategy"),
                 pickupAt = obj.string("pickupAt"),
@@ -133,6 +134,13 @@ object RelayProtocol {
                 stageType = obj.string("stageType"),
                 researchesLeft = obj.int("researchesLeft"),
                 revision = (obj["revision"] as? JsonPrimitive)?.longOrNull,
+                wave = (obj["window"] as? JsonObject)?.string("wave"),
+                waveDate = (obj["window"] as? JsonObject)?.string("date"),
+                sharedWith = obj.int("sharedWith"),
+                maxTotal = (obj["maxTotal"] as? JsonPrimitive)?.longOrNull,
+                finalTotal = (obj["finalTotal"] as? JsonPrimitive)?.longOrNull,
+                plannedPickupAt = obj.string("plannedPickupAt"),
+                plannedDeliveryAt = obj.string("plannedDeliveryAt"),
             ),
         )
     }

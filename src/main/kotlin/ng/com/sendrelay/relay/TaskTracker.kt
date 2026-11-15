@@ -24,6 +24,23 @@ data class TrackedEta(
         maxOf(0L, Math.round((arrivesAtMillis - nowMillis) / 1000.0))
 }
 
+/**
+ * A pooled delivery's route: grouped with other deliveries at its final price, or going alone at its
+ * maximum. From TASK_POOLING_GROUPED and TASK_POOLING_SOLO.
+ */
+data class TrackedPooling(
+    /** GROUPED or SOLO. */
+    val state: String,
+    /** Most it can cost, in kobo. */
+    val maxTotal: Long?,
+    /** What it costs once grouped, in kobo; null while going alone (it pays [maxTotal]). */
+    val finalTotal: Long?,
+    /** How many other deliveries share the route (never who they are). */
+    val sharedWith: Int?,
+    val plannedPickupAt: String?,
+    val plannedDeliveryAt: String?,
+)
+
 enum class TrackerConnection { IDLE, CONNECTING, LIVE, RECONNECTING, OFFLINE }
 
 /** Everything known about one tracked task. Mirrors the web SDKs' tracker state. */
@@ -41,6 +58,13 @@ data class TaskTrackerState @JvmOverloads constructor(
     val error: String? = null,
     /** When SendRelay stops looking for a rider (ISO 8601), for tasks that keep looking or are booked. Count down to this while SEARCHING. */
     val searchExpiresAt: String? = null,
+    /** Pooled delivery only: its route and price, once grouped or sent alone. */
+    val pooling: TrackedPooling? = null,
+    /**
+     * Pooled delivery only: stops the rider makes before this delivery's next one (0 when it is next).
+     * While above 0 there is no ETA and the position may be withheld: show the planned times.
+     */
+    val stopsBefore: Int? = null,
 ) {
     /** The state after an event. Events for other tasks change nothing. */
     @JvmOverloads
@@ -57,6 +81,20 @@ data class TaskTrackerState @JvmOverloads constructor(
                 val keepEta = !done && !(eta != null && stage != null && eta.stageIndex != stage)
                 // The rider who cancelled is gone; their last position and ETA no longer apply.
                 val unassigned = e.type == TaskEventType.RIDER_UNASSIGNED
+                val grouped = e.type == TaskEventType.POOLING_GROUPED
+                val solo = e.type == TaskEventType.POOLING_SOLO
+                val nextPooling = if (grouped || solo) {
+                    TrackedPooling(
+                        state = if (grouped) "GROUPED" else "SOLO",
+                        maxTotal = e.maxTotal,
+                        finalTotal = if (grouped) e.finalTotal else null,
+                        sharedWith = if (grouped) e.sharedWith else null,
+                        plannedPickupAt = if (grouped) e.plannedPickupAt else null,
+                        plannedDeliveryAt = if (grouped) e.plannedDeliveryAt else null,
+                    )
+                } else {
+                    pooling
+                }
                 copy(
                     status = nextStatus,
                     finished = done,
@@ -65,6 +103,9 @@ data class TaskTrackerState @JvmOverloads constructor(
                     rider = if (unassigned) null else rider,
                     riderId = if (unassigned) null else riderId,
                     searchExpiresAt = e.searchExpiresAt ?: searchExpiresAt,
+                    pooling = nextPooling,
+                    // A pooled delivery going alone is tracked like any other task from here.
+                    stopsBefore = if (solo) null else stopsBefore,
                     events = (listOf(e) + events).take(maxEvents),
                 )
             }
@@ -80,7 +121,10 @@ data class TaskTrackerState @JvmOverloads constructor(
                     connection = TrackerConnection.LIVE,
                     rider = u.location,
                     riderId = u.riderId ?: riderId,
-                    eta = u.eta?.let { TrackedEta(it.stageIndex, it.seconds, it.meters, reported + it.seconds * 1000L, reported) } ?: eta,
+                    // Pooled delivery: an ETA only while this delivery's stop is next.
+                    eta = u.eta?.let { TrackedEta(it.stageIndex, it.seconds, it.meters, reported + it.seconds * 1000L, reported) }
+                        ?: if ((u.stopsBefore ?: 0) > 0) null else eta,
+                    stopsBefore = u.stopsBefore ?: stopsBefore,
                 )
             }
         }
