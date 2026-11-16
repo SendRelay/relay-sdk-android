@@ -108,6 +108,36 @@ object RelayProtocol {
             )
         }
         val eventType = TaskEventType.from(type) ?: return null
+        // A malformed stage or approval is dropped rather than losing the event.
+        val stage = (obj["stage"] as? JsonObject)?.let { s ->
+            val stageType = s.string("type")
+            val stageStatus = s.string("status")
+            if (stageType != null && stageStatus != null) {
+                ErrandStageOutcome(stageType, s.string("reference"), stageStatus, s.string("reason"), s.string("note"), s.string("endedAt"))
+            } else {
+                null
+            }
+        }
+        val approval = (obj["approval"] as? JsonObject)?.let { a ->
+            val id = a.string("id")
+            val kind = a.string("kind")
+            val status = a.string("status")
+            if (id != null && kind != null && status != null) {
+                ErrandApproval(
+                    id = id,
+                    stageIndex = a.int("stageIndex"),
+                    kind = kind,
+                    status = status,
+                    question = a.string("question"),
+                    photo = a.string("photo"),
+                    expiresAt = a.string("expiresAt"),
+                    note = a.string("note"),
+                    decidedAt = a.string("decidedAt"),
+                )
+            } else {
+                null
+            }
+        }
         return RelayEvent.Task(
             TaskEvent(
                 type = eventType,
@@ -131,7 +161,7 @@ object RelayProtocol {
                 pickupAt = obj.string("pickupAt"),
                 searchExpiresAt = obj.string("searchExpiresAt"),
                 ridersNearby = obj.int("ridersNearby"),
-                stageType = obj.string("stageType"),
+                stageType = obj.string("stageType") ?: stage?.type,
                 researchesLeft = obj.int("researchesLeft"),
                 revision = (obj["revision"] as? JsonPrimitive)?.longOrNull,
                 wave = (obj["window"] as? JsonObject)?.string("wave"),
@@ -141,6 +171,9 @@ object RelayProtocol {
                 finalTotal = (obj["finalTotal"] as? JsonPrimitive)?.longOrNull,
                 plannedPickupAt = obj.string("plannedPickupAt"),
                 plannedDeliveryAt = obj.string("plannedDeliveryAt"),
+                stage = stage,
+                totalStages = obj.int("totalStages"),
+                approval = approval,
             ),
         )
     }

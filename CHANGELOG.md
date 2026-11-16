@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.13.0 — 2026-11-16
+
+- Errands: `TaskEventType.STAGE_FAILED` (with `stage`, an `ErrandStageOutcome`, and `totalStages` on `TaskEvent`), and `APPROVAL_REQUESTED` / `APPROVAL_RESOLVED` (with `approval`, an `ErrandApproval`): the rider asks you something, such as swapping an item that is out of stock. Answer from your backend with a server SDK (`tasks.decideApproval`). `TaskTrackerState` gains `approval`, the open question, cleared once answered, timed out or the task ends. New fields are last, so existing positional calls keep compiling. See [errands](https://docs.sendrelay.com.ng/errands).
+
 ## 1.12.0 — 2026-11-15
 
 - Pooled delivery: `TaskEventType.POOLING_GROUPED` and `POOLING_SOLO` (with `wave`, `waveDate`, `sharedWith`, `maxTotal`, `finalTotal` and planned times on `TaskEvent`), and `RiderLocationUpdate.stopsBefore`. `TaskTrackerState` gains `pooling` (`TrackedPooling`) and `stopsBefore`; the ETA is cleared while another stop is first. New fields are last, so existing positional calls keep compiling. See [pooled delivery](https://docs.sendrelay.com.ng/concepts/pooled-delivery).

@@ -65,6 +65,8 @@ data class TaskTrackerState @JvmOverloads constructor(
      * While above 0 there is no ETA and the position may be withheld: show the planned times.
      */
     val stopsBefore: Int? = null,
+    /** Errand only: the rider's open question, waiting for your answer; null once it is answered, times out, or the task ends. */
+    val approval: ErrandApproval? = null,
 ) {
     /** The state after an event. Events for other tasks change nothing. */
     @JvmOverloads
@@ -95,6 +97,12 @@ data class TaskTrackerState @JvmOverloads constructor(
                 } else {
                     pooling
                 }
+                val nextApproval = when {
+                    done -> null
+                    e.type == TaskEventType.APPROVAL_REQUESTED && e.approval?.isPending == true -> e.approval
+                    e.type == TaskEventType.APPROVAL_RESOLVED && (approval == null || approval.id == e.approval?.id) -> null
+                    else -> approval
+                }
                 copy(
                     status = nextStatus,
                     finished = done,
@@ -106,6 +114,7 @@ data class TaskTrackerState @JvmOverloads constructor(
                     pooling = nextPooling,
                     // A pooled delivery going alone is tracked like any other task from here.
                     stopsBefore = if (solo) null else stopsBefore,
+                    approval = nextApproval,
                     events = (listOf(e) + events).take(maxEvents),
                 )
             }

@@ -1,7 +1,7 @@
 package ng.com.sendrelay.relay
 
 /** The published SDK version. Kept in sync with gradle.properties by scripts/check-sdk-versions.mjs. */
-const val RELAY_SDK_VERSION = "1.12.0"
+const val RELAY_SDK_VERSION = "1.13.0"
 
 enum class TaskStatus(val value: String) {
     /** Booked for a pickup time; SendRelay has not started looking yet. */
@@ -48,6 +48,15 @@ enum class TaskEventType(val value: String, val status: TaskStatus?) {
     POOLING_GROUPED("TASK_POOLING_GROUPED", null),
     /** Pooled delivery: it goes alone at `maxTotal` through ordinary dispatch; dispatch events follow. */
     POOLING_SOLO("TASK_POOLING_SOLO", null),
+    /**
+     * Errand: a work stop did not get done (`stage.status` FAILED, `stage.reason` why). The task goes
+     * on at `nextStageIndex`, or ends when nothing is left to do.
+     */
+    STAGE_FAILED("STAGE_FAILED", null),
+    /** Errand: the rider asks you something ([TaskEvent.approval]). Answer through the server API before it expires. */
+    APPROVAL_REQUESTED("APPROVAL_REQUESTED", null),
+    /** Errand: a question was answered, timed out or withdrawn (`approval.status`). */
+    APPROVAL_RESOLVED("APPROVAL_RESOLVED", null),
     COMPLETED("TASK_COMPLETED", TaskStatus.COMPLETED),
     FAILED("TASK_FAILED", TaskStatus.FAILED),
     CANCELLED("TASK_CANCELLED", TaskStatus.CANCELLED);
@@ -56,6 +65,48 @@ enum class TaskEventType(val value: String, val status: TaskStatus?) {
         @JvmStatic
         fun from(value: String?): TaskEventType? = entries.firstOrNull { it.value == value }
     }
+}
+
+/** STAGE_FAILED: the errand stop that did not get done. */
+data class ErrandStageOutcome(
+    /** QUEUE, PURCHASE, PAYMENT, INSPECTION, CUSTOM (or a newer type). */
+    val type: String,
+    /** Your name for the stop, if you gave one. */
+    val reference: String? = null,
+    /** FAILED or SKIPPED (or a newer status). */
+    val status: String,
+    /** OUT_OF_STOCK, CLOSED, REFUSED, NOT_READY, PAYMENT_FAILED, OTHER (or a newer reason). */
+    val reason: String? = null,
+    /** What the rider wrote. */
+    val note: String? = null,
+    /** When it ended (ISO 8601). */
+    val endedAt: String? = null,
+)
+
+/**
+ * APPROVAL_REQUESTED / APPROVAL_RESOLVED: a question from the rider on an errand. Answer it with the
+ * server SDK (`tasks.decideApproval`); the full request, with what approving does to the price, is on
+ * `tasks.approvals`.
+ */
+data class ErrandApproval(
+    val id: String,
+    val stageIndex: Int? = null,
+    /** SUBSTITUTE, PRICE_ABOVE_MAX, OVER_SPEND_LIMIT, MORE_TIME, QUESTION (or a newer kind). */
+    val kind: String,
+    /** PENDING, APPROVED, DECLINED, EXPIRED (or a newer status). */
+    val status: String,
+    /** The question in plain words, as the rider app shows it. */
+    val question: String? = null,
+    /** A photo the rider attached (a file path; open it through the server API). */
+    val photo: String? = null,
+    /** When the rider stops waiting (ISO 8601). */
+    val expiresAt: String? = null,
+    /** The note sent with the answer. */
+    val note: String? = null,
+    val decidedAt: String? = null,
+) {
+    /** True while the rider is waiting for your answer. */
+    val isPending: Boolean get() = status == "PENDING"
 }
 
 /** One task lifecycle event. Fields the server didn't send are null. */
@@ -89,7 +140,7 @@ data class TaskEvent(
     val searchExpiresAt: String? = null,
     /** TASK_RIDERS_NEARBY: how many eligible riders were found. */
     val ridersNearby: Int? = null,
-    /** STAGE_ARRIVED: PICKUP or DROPOFF. */
+    /** STAGE_ARRIVED: PICKUP or DROPOFF (or, on an errand, the work stop's type). STAGE_FAILED: the failed stop's type. */
     val stageType: String? = null,
     /** TASK_RIDER_UNASSIGNED: further rider cancels the task can survive before it ends CANCELLED. */
     val researchesLeft: Int? = null,
@@ -111,6 +162,12 @@ data class TaskEvent(
     /** TASK_POOLING_GROUPED: the planned pickup and delivery times (ISO 8601). */
     val plannedPickupAt: String? = null,
     val plannedDeliveryAt: String? = null,
+    /** STAGE_FAILED: the stop that did not get done. */
+    val stage: ErrandStageOutcome? = null,
+    /** STAGE_FAILED: how many stops the task has. */
+    val totalStages: Int? = null,
+    /** APPROVAL_REQUESTED / APPROVAL_RESOLVED: the rider's question. */
+    val approval: ErrandApproval? = null,
 )
 
 data class RiderLocation(

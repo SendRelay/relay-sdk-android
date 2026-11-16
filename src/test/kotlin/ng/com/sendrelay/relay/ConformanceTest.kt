@@ -41,6 +41,16 @@ class ConformanceTest {
                 "stageType" to stageType, "researchesLeft" to researchesLeft, "revision" to revision,
                 "sharedWith" to sharedWith, "maxTotal" to maxTotal, "finalTotal" to finalTotal,
                 "window" to if (wave != null || waveDate != null) mapOf("wave" to wave, "date" to waveDate) else null,
+                "nextStageIndex" to nextStageIndex, "totalStages" to totalStages,
+                "stage" to stage?.let {
+                    mapOf("type" to it.type, "reference" to it.reference, "status" to it.status, "reason" to it.reason, "note" to it.note, "endedAt" to it.endedAt)
+                },
+                "approval" to approval?.let {
+                    mapOf(
+                        "id" to it.id, "stageIndex" to it.stageIndex, "kind" to it.kind, "status" to it.status, "question" to it.question,
+                        "photo" to it.photo, "expiresAt" to it.expiresAt, "note" to it.note, "decidedAt" to it.decidedAt,
+                    )
+                },
             )
         }
         is RelayEvent.RiderLocationChanged -> with(event.update) {
@@ -205,6 +215,33 @@ class TaskTrackerStateTest {
         state = state.applying(event("""{"type":"TASK_COMPLETED","taskId":"t1","status":"COMPLETED"}"""))
         assert(state.finished)
         assertEquals(listOf(TaskEventType.COMPLETED, TaskEventType.STAGE_COMPLETED, TaskEventType.ASSIGNED), state.events.map { it.type })
+    }
+
+    @Test
+    fun followsAnErrand() {
+        var state = TaskTrackerState("t1", status = TaskStatus.IN_PROGRESS, currentStageIndex = 0)
+        state = state.applying(
+            event("""{"type":"STAGE_FAILED","taskId":"t1","stageIndex":0,"stage":{"type":"QUEUE","reference":null,"status":"FAILED","reason":"CLOSED","note":"Shut for a holiday","endedAt":"2026-11-16T10:20:00.000Z"},"nextStageIndex":1,"totalStages":3,"revision":5}"""),
+        )
+        assertEquals(1, state.currentStageIndex)
+        assertEquals(TaskStatus.IN_PROGRESS, state.status, "a failed stop leaves the status alone")
+        assertEquals("CLOSED", state.events.first().stage?.reason)
+        assertEquals("QUEUE", state.events.first().stageType)
+
+        val asked = """{"type":"APPROVAL_REQUESTED","taskId":"t1","stageIndex":1,"approval":{"id":"apr_1","stageIndex":1,"kind":"SUBSTITUTE","status":"PENDING","question":"Peak milk 400g is out. Buy the 1 kg pack?","proposal":{},"photo":null,"expiresAt":"2026-11-16T10:40:00.000Z","note":null,"decidedAt":null},"revision":6}"""
+        state = state.applying(event(asked))
+        assertEquals("SUBSTITUTE", state.approval?.kind)
+        assert(state.approval?.isPending == true)
+
+        // Another question's answer leaves this one open.
+        state = state.applying(event("""{"type":"APPROVAL_RESOLVED","taskId":"t1","approval":{"id":"apr_0","kind":"MORE_TIME","status":"EXPIRED"},"revision":7}"""))
+        assertEquals("apr_1", state.approval?.id)
+        state = state.applying(event("""{"type":"APPROVAL_RESOLVED","taskId":"t1","approval":{"id":"apr_1","kind":"SUBSTITUTE","status":"APPROVED","note":"Yes"},"revision":8}"""))
+        assertNull(state.approval)
+
+        state = state.applying(event(asked))
+        state = state.applying(event("""{"type":"TASK_COMPLETED","taskId":"t1","status":"COMPLETED"}"""))
+        assertNull(state.approval, "nothing is open once the task ends")
     }
 
     @Test
